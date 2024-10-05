@@ -1,0 +1,173 @@
+/*
+ * Copyright (c) 2020-2024 STMicroelectronics
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <st/wl/stm32wle5Xc.dtsi>
+#include <st/wl/stm32wle5jcix-pinctrl.dtsi>
+
+/ {
+	model = "RAKWireless RAK3172 WisDuo STM32WLE5 Module for LoRaWAN";
+	compatible = "rak,lora-rak3172";
+
+	chosen {
+		zephyr,console = &usart1;
+		zephyr,shell-uart = &usart1;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,code-partition = &slot0_partition;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		led0: led_0 {
+			gpios = <&gpioa 0 GPIO_ACTIVE_LOW>;
+			label = "Red LED 0";
+		};
+		led1: led_1 {
+			gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+			label = "Green LED 1";
+		};
+	};
+
+	buttons {
+		compatible = "gpio-keys";
+		button0: button_0 {
+			gpios = <&gpioa 6 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "Push button 0";
+		};
+	};
+
+	/* These aliases are provided for compatibility with samples */
+	aliases {
+		led0 = &led0;
+		led1 = &led1;
+		sw0 = &button0;
+		bootloader-led0 = &led0;
+		mcuboot-button0 = &button0;
+		mcuboot-led0 = &led0;
+		watchdog0 = &iwdg;
+		lora0 = &lora;
+	};
+
+};
+
+&subghzspi {
+	status = "okay";
+	lora: radio@0 {
+		status = "okay";
+		tx-enable-gpios = <&gpioc 13 GPIO_ACTIVE_HIGH>; 
+		rx-enable-gpios = <&gpiob 8 GPIO_ACTIVE_HIGH>;
+		power-amplifier-output = "rfo-hp";
+	};
+};
+
+&clk_lse {
+	// Low-Speed External Crystal
+	// RAK3172 has 32.768KHz Crystal Fitted
+	status = "okay";
+	clock-frequency = <32768>;
+};
+
+&clk_lsi {
+	// Low-Speed Internal 32kHz
+	status = "disabled";
+};
+
+&lptim1 {
+	// Low Power Timer
+	// Required for Low Power Management
+	// https://docs.zephyrproject.org/3.0.0/reference/devicetree/bindings/timer/st%2Cstm32-lptim.html#dtbinding-st-stm32-lptim
+	status = "okay";
+	clocks = <&rcc STM32_CLOCK_BUS_APB1 0x80000000>,
+		 	<&rcc STM32_SRC_LSE LPTIM1_SEL(3)>;
+};
+
+&clk_hse {
+	// High-Speed External 32 MHz Oscillator Clock with trimming capacitors
+	// https://docs.zephyrproject.org/3.0.0/reference/devicetree/bindings/clock/st%2Cstm32-hse-clock.html#dtbinding-st-stm32-hse-clock
+	status = "okay";
+	clock-frequency = <DT_FREQ_M(32)>;
+};
+
+&clk_msi {
+	// Multi-Speed Internal RC Oscillator from 100 kHz to 48 MHz
+	// MSI Range = 11 (48MHz), Range 6 = (4MHz)
+	// The MSI is used as system clock source after startup from reset, configured at 4 MHz.
+	status = "okay";
+	msi-range = <6>;
+};
+
+&clk_hsi {
+	// High-Speed Internal 16MHz RC Oscillator Clock
+	status = "disabled";
+};
+
+&pll {
+	status = "okay";
+	div-m = <1>;
+	mul-n = <3>;
+	div-r = <2>;
+	div-q = <2>;
+	clocks = <&clk_hse>;
+};
+
+&rcc {
+	clocks = <&pll>;
+	clock-frequency = <DT_FREQ_M(48)>;
+	cpu1-prescaler = <1>;
+	ahb3-prescaler = <1>;
+	apb1-prescaler = <1>;
+	apb2-prescaler = <1>;
+};
+
+&usart1 {
+	pinctrl-0 = <&usart1_tx_pb6 &usart1_rx_pb7>;
+	pinctrl-names = "default";
+	current-speed = <115200>;
+	status = "okay";
+};
+
+&rtc {
+	status = "okay";
+};
+
+&iwdg {
+	status = "okay";
+};
+
+&aes {
+	status = "okay";
+};
+
+&rng {
+	status = "okay";
+};
+
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x00000000 DT_SIZE_K(32)>;
+			read-only;
+		};
+		slot0_partition: partition@8000 {
+			label = "image-0";
+			reg = <0x00008000 DT_SIZE_K(108)>;
+		};
+		slot1_partition: partition@23000 {
+			label = "image-1";
+			reg = <0x00023000 DT_SIZE_K(108)>;
+		};
+		storage_partition: partition@3e000 {
+			label = "storage";
+			reg = <0x0003e000 DT_SIZE_K(8)>;
+		};
+	};
+};
