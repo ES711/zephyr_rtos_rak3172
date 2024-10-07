@@ -1,4 +1,4 @@
-identifier: rak3172
+identifier: rak_3172
 name: RAK3172
 type: mcu
 arch: arm
@@ -17,4 +17,4 @@ supported:
   - uart
   - watchdog
   - lora
-vendor: rak
+vendor: st

@@ -1,2 +1,3 @@
 config BOARD_RAK_3172
 	select SOC_STM32WLE5XX
+	

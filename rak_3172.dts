@@ -8,13 +8,14 @@
 #include <st/wl/stm32wle5Xc.dtsi>
 #include <st/wl/stm32wle5jcix-pinctrl.dtsi>
 
+
 / {
 	model = "RAKWireless RAK3172 WisDuo STM32WLE5 Module for LoRaWAN";
 	compatible = "rak,lora-rak3172";
 
 	chosen {
-		zephyr,console = &usart1;
-		zephyr,shell-uart = &usart1;
+		zephyr,console = &usart2;
+		zephyr,shell-uart = &usart2;
 		zephyr,sram = &sram0;
 		zephyr,flash = &flash0;
 		zephyr,code-partition = &slot0_partition;
@@ -24,30 +25,19 @@
 		compatible = "gpio-leds";
 		led0: led_0 {
 			gpios = <&gpioa 0 GPIO_ACTIVE_LOW>;
-			label = "Red LED 0";
+			label = "Green LED 0";
 		};
 		led1: led_1 {
 			gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
-			label = "Green LED 1";
+			label = "BLUE LED 1";
 		};
 	};
 
-	buttons {
-		compatible = "gpio-keys";
-		button0: button_0 {
-			gpios = <&gpioa 6 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
-			label = "Push button 0";
-		};
-	};
 
 	/* These aliases are provided for compatibility with samples */
 	aliases {
 		led0 = &led0;
 		led1 = &led1;
-		sw0 = &button0;
-		bootloader-led0 = &led0;
-		mcuboot-button0 = &button0;
-		mcuboot-led0 = &led0;
 		watchdog0 = &iwdg;
 		lora0 = &lora;
 	};
@@ -58,8 +48,7 @@
 	status = "okay";
 	lora: radio@0 {
 		status = "okay";
-		tx-enable-gpios = <&gpioc 13 GPIO_ACTIVE_HIGH>; 
-		rx-enable-gpios = <&gpiob 8 GPIO_ACTIVE_HIGH>;
+		compatible = "st,stm32wl-subghz-radio";
 		power-amplifier-output = "rfo-hp";
 	};
 };
@@ -76,14 +65,14 @@
 	status = "disabled";
 };
 
-&lptim1 {
-	// Low Power Timer
-	// Required for Low Power Management
-	// https://docs.zephyrproject.org/3.0.0/reference/devicetree/bindings/timer/st%2Cstm32-lptim.html#dtbinding-st-stm32-lptim
-	status = "okay";
-	clocks = <&rcc STM32_CLOCK_BUS_APB1 0x80000000>,
-		 	<&rcc STM32_SRC_LSE LPTIM1_SEL(3)>;
-};
+// &lptim1 {
+// 	// Low Power Timer
+// 	// Required for Low Power Management
+// 	// https://docs.zephyrproject.org/3.0.0/reference/devicetree/bindings/timer/st%2Cstm32-lptim.html#dtbinding-st-stm32-lptim
+// 	status = "okay";
+// 	clocks = <&rcc STM32_CLOCK_BUS_APB1 0x80000000>,
+// 		 	<&rcc STM32_SRC_LSE LPTIM1_SEL(3)>;
+// };
 
 &clk_hse {
 	// High-Speed External 32 MHz Oscillator Clock with trimming capacitors
@@ -92,17 +81,20 @@
 	clock-frequency = <DT_FREQ_M(32)>;
 };
 
+
+&clk_hsi {
+	// High-Speed Internal 16MHz RC Oscillator Clock
+	status = "okay";
+	clock-frequency = <DT_FREQ_M(16)>;
+	// status = "disabled";
+};
+
 &clk_msi {
 	// Multi-Speed Internal RC Oscillator from 100 kHz to 48 MHz
 	// MSI Range = 11 (48MHz), Range 6 = (4MHz)
 	// The MSI is used as system clock source after startup from reset, configured at 4 MHz.
 	status = "okay";
-	msi-range = <6>;
-};
-
-&clk_hsi {
-	// High-Speed Internal 16MHz RC Oscillator Clock
-	status = "disabled";
+	msi-range = <11>;
 };
 
 &pll {
@@ -123,13 +115,12 @@
 	apb2-prescaler = <1>;
 };
 
-&usart1 {
-	pinctrl-0 = <&usart1_tx_pb6 &usart1_rx_pb7>;
+&usart2 {
+	status = "okay";
+	pinctrl-0 = <&usart2_tx_pa2 &usart2_rx_pa3>;
 	pinctrl-names = "default";
 	current-speed = <115200>;
-	status = "okay";
 };
-
 &rtc {
 	status = "okay";
 };
