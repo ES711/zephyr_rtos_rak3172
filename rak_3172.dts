@@ -46,6 +46,7 @@
 
 &subghzspi {
 	status = "okay";
+	// compatible = "st,stm32wl-subghz-radio";
 	lora: radio@0 {
 		status = "okay";
 		compatible = "st,stm32wl-subghz-radio";
@@ -99,10 +100,11 @@
 
 &pll {
 	status = "okay";
-	div-m = <1>;
-	mul-n = <3>;
+	div-m = <2>;
+	mul-n = <6>;
 	div-r = <2>;
 	div-q = <2>;
+	div-p = <2>;
 	clocks = <&clk_hse>;
 };
 
