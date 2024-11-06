@@ -1,4 +1,4 @@
-identifier: rak_3172
+identifier: rak3172
 name: RAK3172
 type: mcu
 arch: arm
@@ -9,6 +9,7 @@ toolchain:
 ram: 64
 flash: 256
 supported:
+  - adc
   - counter
   - gpio
   - i2c
@@ -17,4 +18,4 @@ supported:
   - uart
   - watchdog
   - lora
-vendor: st
+vendor: rak

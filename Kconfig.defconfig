@@ -1,0 +1,23 @@
+# RAK3172 board configuration
+
+if BOARD_RAK3172
+
+config BOARD
+    default "rak3172"
+
+# Uart configuration
+config UART_CONSOLE
+    default y
+    depends on SERIAL
+
+# GPIO configuration
+config GPIO
+    default y
+
+# LoRa configuration
+if LORA
+config LORA_SHELL
+    default y
+endif # LORA
+
+endif # BOARD_RAK3172

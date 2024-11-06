@@ -1,0 +1,200 @@
+/dts-v1/;
+#include <st/wl/stm32wle5Xc.dtsi>
+#include <st/wl/stm32wle5ccux-pinctrl.dtsi>
+
+/ {
+    model = "RAKwireless RAK3172 WisDuo LPWAN Module";
+    compatible = "rakwireless,rak3172";
+
+    chosen {
+        zephyr,console = &usart2;
+        zephyr,shell-uart = &usart2;
+        zephyr,sram = &sram0;   // define in stm32wle5Xc.dtsi
+        zephyr,flash = &flash0;
+        zephyr,code-partition = &slot0_partition;
+    };
+
+    aliases {
+        led0 = &led_green;
+        led1 = &led_blue;
+        lora0 = &lora;
+        watchdog0 = &iwdg;
+    };
+
+    leds {
+        compatible = "gpio-leds";
+
+        led_green: led_0 {
+            gpios = <&gpioa 0 GPIO_ACTIVE_HIGH>;
+            label = "LED Builtin";
+        };
+
+        led_blue: led_1 {
+            gpios = <&gpioa 1 GPIO_ACTIVE_HIGH>;
+            label = "LED Connection";
+        };
+    };
+};
+
+/*
+ * Config Peripheral
+ */
+
+&subghzspi { // define in stm32wl.dtsi
+    status = "okay";
+
+    lora: radio@0 {
+        status = "okay";
+        power-amplifier-output = "rfo-hp";  // using high power amplifier
+
+        rfo-lp-max-power = <15>;
+        rfo-hp-max-power = <22>;
+
+        /* remove annotation to enable debug gpio. */
+        // reset-gpios = <&gpioa 11 GPIO_ACTIVE_LOW>;  // RF_NRESET
+        // busy-gpios = <&gpioa 12 GPIO_ACTIVE_HIGH>;  // RF_BUSY
+        // dio1-gpios = <&gpiob 5 GPIO_ACTIVE_HIGH>;   // RF_IRQ1
+    };
+};
+
+&usart1 { // GPIO UART 1
+    status = "okay";
+    pinctrl-0 = <&usart1_rx_pb7 &usart1_tx_pb6>;    // define in stm32wle5ccux-pinctrl.dtsi
+    pinctrl-names = "default";
+    current-speed = <115200>;
+};
+
+&usart2 { // CH340E USB-C Serial Interface
+    status = "okay";
+    pinctrl-0 = <&usart2_rx_pa3 &usart2_tx_pa2>;    // define in stm32wle5ccux-pinctrl.dtsi
+    pinctrl-names = "default";
+    current-speed = <115200>;
+};
+
+&i2c2 {
+    status = "okay";
+    pinctrl-0 = <&i2c2_sda_pa11 &i2c2_scl_pa12>;    // define in stm32wle5ccux-pinctrl.dtsi
+    pinctrl-names = "default";
+};
+
+&spi1 {
+    status = "okay";
+    /* define in stm32wle5ccux-pinctrl.dtsi */
+    pinctrl-0 = <
+        &spi1_mosi_pa7
+        &spi1_miso_pa6
+        &spi1_sck_pa5
+        &spi1_nss_pa4
+    >;
+    pinctrl-names = "default";
+};
+
+&adc1 {
+    status = "okay";
+    // pinctrl-0 = <&adc_in11_pa15>, <&adc_in6_pa10>, <&adc_in4_pb2>, <&adc_in3_pb4>, <&adc_in2_pb3>;
+    // pinctrl-names = "default";
+    st,adc-clock-source = <SYNC>;
+    st,adc-prescaler = <1>;
+};
+
+/*
+ *  Config internal module
+ */
+
+&rtc {
+    status = "okay";
+    clocks = <&rcc STM32_CLOCK_BUS_APB1 0x00000400>,    // Enable bus clock first
+             <&rcc STM32_SRC_LSE RTC_SEL(1)>;           // Use LSE clock replace it
+};
+
+&aes {
+    status = "okay";
+};
+
+&rng {
+    status = "okay";
+    clocks = <&rcc STM32_CLOCK_BUS_AHB3 0x00040000>,    // Enable bus clock first
+             <&rcc STM32_SRC_PLL_Q RNG_SEL(2)>;         // Use PLL-Q clock replace it
+};
+
+&iwdg {
+	status = "okay";
+};
+
+&wwdg {
+    status = "okay";
+};
+
+/*
+ * Config System clock
+ * use external clock prepare by RAK
+ */
+
+&clk_hse {  // define in stm32wl.dtsi
+    status = "okay";
+    clock-frequency = <DT_FREQ_M(32)>;
+    // hse-div2; // remove annotation to enable
+};
+
+&clk_lse {  // define in stm32wl.dtsi
+    status = "okay";
+    clock-frequency = <32768>;
+};
+
+&pll {  // define in stm32wl.dtsi
+    status = "okay";
+    clocks = <&clk_hse>;
+    div-m = <2>;    //First div by 2 (Input)
+    mul-n = <6>;    //Then mul by 6
+    div-p = <2>;    //From mul, div by 2 (PLLP)
+    div-q = <2>;    //From mul, div by 2 (PLLQ)
+    div-r = <2>;    //From mul, div by 2 (PLLCLK)
+};
+
+/*
+ * Config reset and clock controller
+ * CPU / AHB / APB clock
+ */
+
+&rcc {  // define in stm32wl.dtsi
+    status = "okay";
+    clocks = <&pll>;
+    clock-frequency = <DT_FREQ_M(48)>;  // SYSCLK = 48MHz
+    cpu1-prescaler = <1>;   // HCLK1 = SYSCLK/1 = 48MHz
+    ahb3-prescaler = <1>;   // HCLK3 = SYSCLK/1 = 48MHz
+    apb1-prescaler = <1>;   // PCLK1 = HCLK1/1 = 48MHz
+    apb2-prescaler = <1>;   // PCLK2 = HCLK1/1 = 48MHz
+};
+
+/*
+ * Config flash partition
+ */
+
+&flash0 {   // define in stm32wle5Xc.dtsi
+    partitions {
+        compatible = "fixed-partitions";
+        #address-cells = <1>;
+        #size-cells = <1>;
+
+        boot_partition: partition@0 {
+            label = "mcuboot";
+            reg = <0x00000000 DT_SIZE_K(32)>;  // 32 KB
+            read-only;
+        };
+
+        slot0_partition: partition@8000 {
+            label = "image-0";
+            reg = <0x00008000 DT_SIZE_K(96)>;  // 96 KB
+        };
+
+        slot1_partition: partition@20000 {
+            label = "image-1";
+            reg = <0x00020000 DT_SIZE_K(96)>;  // 96 KB
+        };
+
+        storage_partition: partition@38000 {
+            label = "storage";
+            reg = <0x00038000 DT_SIZE_K(32)>;  // 32 KB
+        };
+    };
+};
